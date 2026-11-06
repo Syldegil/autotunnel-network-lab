@@ -1,0 +1,7 @@
+<resources>
+    <string name="graph_link_label">%1$s\n%2$s</string>
+    <string name="rule_draft_enabled">Activée dans le brouillon</string>
+    <string name="engine_unsupported">Relation non supportée : vérifier routes, familles, interfaces et DNS. Aucun plan exécutable produit.</string>
+    <string name="engine_simulation_refused">Simulation refusée : configuration incompatible avec la topologie fictive.</string>
+    <string name="engine_simulation_state">SIMULATION UNIQUEMENT\nÉtat : %1$s\n%2$s\nObjets simulés : %3$d\n%4$s\nLes objets Android/DS008/vendor simulés restent préservés. Aucun compteur réel ni parcours matériel démontré.</string>
+</resources>

@@ -1,0 +1,14 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'io.github.syldegil.autotunnel'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'io.github.syldegil.autotunnel'; minSdk 26; targetSdk 36; versionCode 1; versionName '0.1.0-public-preview'
+        testInstrumentationRunner (project.findProperty('recipeRunner') ?: 'io.github.syldegil.autotunnel.UiEvidenceInstrumentation')
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+dependencies {
+    implementation 'com.wireguard.android:tunnel:1.0.20260102'
+    testImplementation 'junit:junit:4.13.2'
+}

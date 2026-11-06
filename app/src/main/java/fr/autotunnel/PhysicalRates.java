@@ -1,0 +1,7 @@
+package io.github.syldegil.autotunnel;
+import java.util.*;
+final class PhysicalRates {
+    static String group(String name,String role){if(role.startsWith("VPN")||name.startsWith("tun"))return "";if(role.startsWith("USB")||name.matches("(rndis|usb|ncm)[0-9]+"))return "USB";if(role.startsWith("Wi-Fi")||name.matches("wlan[0-9]+"))return "Wi-Fi";if(role.startsWith("Mobile")||name.startsWith("rmnet_data"))return "4G / 5G";return "";}
+    static String describe(InspectorCollector.Sample sample,InspectorHistory history){StringBuilder out=new StringBuilder();Set<String> names=new TreeSet<>(sample.indices.keySet());names.addAll(sample.counters.keySet());names.addAll(sample.types.keySet());
+        for(String group:Arrays.asList("Wi-Fi","USB","4G / 5G")){out.append(group).append("\n");boolean found=false;for(String n:names){String role=sample.types.getOrDefault(n,"");if(group.equals("4G / 5G")&&sample.counters.containsKey("@mobile")&&!n.equals("@mobile"))continue;if(!group.equals(group(n,role)))continue;found=true;List<InspectorHistory.Point> points=history.points(n,60000);InspectorHistory.Point last=points.isEmpty()?null:points.get(points.size()-1);out.append(n.equals("@mobile")?"Tous réseaux mobiles":n).append(role.isEmpty()?" (type présumé)":"").append("  ↓ ").append(InspectorHistory.rate(last==null?-1:last.rx)).append("  ↑ ").append(InspectorHistory.rate(last==null?-1:last.tx)).append("\n");}if(!found)out.append("Interface absente ou non visible\n");}return out.toString().trim();}
+}

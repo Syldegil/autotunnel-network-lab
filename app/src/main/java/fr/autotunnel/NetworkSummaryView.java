@@ -1,0 +1,25 @@
+package io.github.syldegil.autotunnel;
+import android.app.*;import android.content.*;import android.os.*;import android.view.*;import android.widget.*;
+/** Compact live address card. Full values and sources remain available without truncation. */
+final class NetworkSummaryView extends LinearLayout {
+ private final TextView route,ip4,ip6,dns,lan,stamp;private final Button toggle;private final InspectorVisuals.Icon icon;
+ private final Handler handler=new Handler(Looper.getMainLooper());private final Runnable update=new Runnable(){public void run(){render();handler.postDelayed(this,1000);}};
+ NetworkSummaryView(Context c){super(c);setOrientation(VERTICAL);int pad=AppStyle.dp(c,18);setPadding(pad,pad,pad,pad);AppStyle.card(this);LayoutParams outer=new LayoutParams(-1,-2);outer.setMargins(0,AppStyle.dp(c,12),0,0);setLayoutParams(outer);
+  LinearLayout head=DashboardUi.row(this);icon=new InspectorVisuals.Icon(c,"globe",AppStyle.green(c));head.addView(icon,new LayoutParams(AppStyle.dp(c,32),AppStyle.dp(c,32)));route=DashboardUi.text(head,"Réseau",20,true);route.setPadding(AppStyle.dp(c,12),0,0,0);route.setLayoutParams(new LayoutParams(0,-2,1));
+  stamp=DashboardUi.text(this,"",12,false);stamp.setPadding(0,AppStyle.dp(c,8),0,AppStyle.dp(c,8));
+  ip4=value("IPv4 publique");ip6=value("IPv6 publique");dns=value("DNS Android");lan=value("LAN / tunnel · IPv4");
+  LinearLayout actions=DashboardUi.row(this);toggle=DashboardUi.action(actions,"",()->{if(NetworkWatchService.running){c.getSharedPreferences("network-watch",0).edit().putBoolean("enabled",false).apply();c.stopService(new Intent(c,NetworkWatchService.class));}else try{NetworkWatchService.start(c);}catch(RuntimeException e){DashboardUi.info(c,"Suivi indisponible","Android a refusé le démarrage. Réessayez depuis cet écran.");}render();});toggle.setLayoutParams(new LayoutParams(0,-2,1));
+  Button journal=DashboardUi.action(actions,"Journal",()->journal());journal.setLayoutParams(new LayoutParams(0,-2,1));
+  Button info=DashboardUi.action(actions,"ⓘ",()->{ExitSnapshot s=NetworkWatchService.latest;DashboardUi.info(c,"Adresses et sources",(s==null?"Aucun relevé":s.lan)+"\n\n"+NetworkWatchService.wireguardState()+"\n"+NetworkWatchService.logStatus+"\n\nDNS déclarés par Android, hors DNS internes des navigateurs. IP publiques : HTTPS ipify toutes les 30 s et sur changement pour cette application. Les autres apps peuvent avoir une sortie différente. Une IPv6 indisponible ne prouve pas l’absence de fuite.");});info.setContentDescription("Détails des adresses et sources");info.setLayoutParams(new LayoutParams(AppStyle.dp(c,48),-2));render();
+ }
+ private TextView value(String title){DashboardUi.text(this,title,11,false).setPadding(0,AppStyle.dp(getContext(),9),0,2);TextView t=DashboardUi.text(this,"—",16,true);t.setTextIsSelectable(true);return t;}
+ void journal(){Context c=getContext();ScrollView scroll=new ScrollView(c);TextView t=new TextView(c);t.setText(NetworkLog.display(c));t.setTextIsSelectable(true);int p=AppStyle.dp(c,18);t.setPadding(p,p,p,p);t.setTextColor(AppStyle.ink(c));scroll.addView(t);new AlertDialog.Builder(c).setTitle("Journal DNS / IP").setView(scroll).setPositiveButton("Fermer",null).setNeutralButton("Effacer",(d,w)->new AlertDialog.Builder(c).setMessage("Effacer l’historique de ce téléphone ?").setNegativeButton("Annuler",null).setPositiveButton("Effacer",(x,y)->NetworkLog.clear(c)).show()).show();}
+ void render(){long now=System.currentTimeMillis();ExitSnapshot s=NetworkWatchService.latest;boolean fresh=NetworkWatchService.running&&s!=null&&now>=NetworkWatchService.observedAt&&now-NetworkWatchService.observedAt<10000;
+  route.setText(fresh?s.route:NetworkWatchService.running?"Lecture en cours…":"Suivi en pause");icon.kind(fresh&&s.route.contains("Wi-Fi")?"wifi":fresh&&s.route.contains("VPN")?"shield":"globe");
+  ip4.setText(fresh?NetworkWatchService.publicIp:"—");ip6.setText(fresh?NetworkWatchService.publicIp6:"—");dns.setText(fresh?s.dns:"—");lan.setText(fresh?lan4(s.lan):"—");
+  stamp.setText(fresh?"● Suivi actif"+(NetworkWatchService.ipAt>0?" · IP à "+new java.text.SimpleDateFormat("HH:mm:ss",java.util.Locale.FRANCE).format(new java.util.Date(NetworkWatchService.ipAt)):" · IP en attente"):"Aucune mesure courante");
+  if(toggle!=null){toggle.setText(NetworkWatchService.running?"Pause suivi":"Reprendre");toggle.setContentDescription(NetworkWatchService.running?"Mettre en pause le suivi DNS et IP":"Reprendre le suivi DNS et IP");}
+ }
+ static String lan4(String all){java.util.Set<String> lines=new java.util.TreeSet<>();for(String line:all.split("\n")){String[] pair=line.split(" · ",2);if(pair.length==2&&!pair[1].contains(":")&&pair[0].matches("(wlan|eth|usb|rndis|ncm|tun|wg)[0-9]+"))lines.add(line);}return lines.isEmpty()?"Non visible":String.join("\n",lines);}
+ @Override protected void onAttachedToWindow(){super.onAttachedToWindow();handler.post(update);}@Override protected void onDetachedFromWindow(){handler.removeCallbacks(update);super.onDetachedFromWindow();}
+}
